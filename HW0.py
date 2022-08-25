@@ -18,10 +18,23 @@ def problem1():
 	print(df.describe())
 
 
-	def problem2():
+def problem2():
+	df = pd.read_csv('AAPL.csv')
+	df['Date'] = pd.to_datetime(df['Date'])
 
+	close_shift = df['Close'].shift()
+	df['Daily_Return'] = df['Close'] / close_shift
+	print(df.describe())
+
+	fig, axs = plt.subplots(1, 2)
+	sns.set_theme()
+
+	sns.lineplot(ax=axs[0], x='Date', y='Close', data=df)
+	sns.lineplot(ax=axs[1], x='Date', y='Daily_Return', data=df, hue=df['Date'].dt.year, legend=True)
+
+	plt.show()
 
 
 if __name__ == '__main__':
 	# problem1()
-	problem2()
+	# problem2()
