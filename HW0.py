@@ -1,23 +1,29 @@
 # Assignment taken from https://github.com/yubin-park/cs534/blob/master/homework/hw0.md
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import numpy as np
 from matplotlib import pyplot as plt
 
 
 def problem1():
 	df = pd.read_csv('hw0_p1.csv')
 	dfm = df.melt('y', var_name='xn', value_name='x')  # Combine x1, x2 into single column
+
 	sns.set_theme()
 	fig, axs = plt.subplots(1, 3)
+
 	sns.lineplot(ax=axs[0], x='x1', y='y', data=df, label='x1 v y')  # Lineplot of x1 vs y
 	sns.lineplot(ax=axs[0], x='x2', y='y', data=df, label='x2 v y')  # Lineplot of x2 vs y
 	sns.lineplot(ax=axs[0], x='x1', y='x2', data=df, label='x1 v x2')  # Lineplot of x1 vs x2
 	sns.kdeplot(ax=axs[1], x='x', y='y', data=dfm)  # KDE plot of x vs y with x1, x2 coupled
 	sns.kdeplot(ax=axs[2], x='x', y='y', data=dfm, hue='xn', legend=True)  # KDE plot of x vs y with x1, x2 decoupled
+
 	axs[0].legend()
+	plt.suptitle('Problem 1')
+	plt.tight_layout()
 	plt.show()
+
 	print(df.describe())
 
 
@@ -33,12 +39,15 @@ def problem2():
 	fig, axs = plt.subplots(1, 2)
 	sns.set_theme()
 
-	sns.lineplot(ax=axs[0], x='Date', y='Close', data=df)  # Lineplot of Close values
-	sns.lineplot(ax=axs[1], x='Date', y='Daily_Return', data=df, hue=df['Date'].dt.year, legend=True)  # LinePlot of Daily Return, colored by year
+	sns.lineplot(ax=axs[0], x='Date', y='Close', data=df).set_title('Closing Prices')  # Lineplot of Close values
+	sns.lineplot(ax=axs[1], x='Date', y='Daily_Return', data=df, hue=df['Date'].dt.year, legend=True).set_title('Daily Return')  # LinePlot of Daily Return, colored by year
 
+	# Alternate code that splits each year into separate graphs for plotting Daily_Return
 	# fg = sns.FacetGrid(data=df, col='Year')
 	# fg.map(sns.lineplot, 'Date', 'Daily_Return')
 
+	plt.suptitle('Problem 2')
+	plt.tight_layout()
 	plt.show()
 
 
@@ -55,14 +64,14 @@ def problem3():
 
 	df = pd.DataFrame({'Chocolate_Milk_Cup': cycles[0, :], 'Orange_Juice_Cup': cycles[1, :]})
 	df['Cycle'] = df.index
-	dfm = df.melt(id_vars='Cycle', value_vars=['Chocolate_Milk_Cup', 'Orange_Juice_Cup'])
+	dfm = df.melt(id_vars='Cycle', value_vars=['Chocolate_Milk_Cup', 'Orange_Juice_Cup'], value_name='Volume')
 
 	sns.set_theme()
-	sns.lineplot(data=dfm, x='Cycle', y='value', hue='variable')
+	sns.lineplot(data=dfm, x='Cycle', y='Volume', hue='variable').set_title('Problem 3')
 	plt.show()
 
 
 if __name__ == '__main__':
-	# problem1()
-	# problem2()
-	# problem3()
+	problem1()
+	problem2()
+	problem3()
