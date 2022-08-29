@@ -11,16 +11,18 @@ def problem1():
 	dfm = df.melt('y', var_name='xn', value_name='x')  # Combine x1, x2 into single column
 
 	sns.set_theme()
-	fig, axs = plt.subplots(1, 3)
+	sns.pairplot(data=df)
+	plt.suptitle('Problem 1 - Pair Plot')
+	plt.tight_layout()
+	plt.show()
 
-	sns.lineplot(ax=axs[0], x='x1', y='y', data=df, label='x1 v y')  # Lineplot of x1 vs y
-	sns.lineplot(ax=axs[0], x='x2', y='y', data=df, label='x2 v y')  # Lineplot of x2 vs y
-	sns.lineplot(ax=axs[0], x='x1', y='x2', data=df, label='x1 v x2')  # Lineplot of x1 vs x2
-	sns.kdeplot(ax=axs[1], x='x', y='y', data=dfm)  # KDE plot of x vs y with x1, x2 coupled
-	sns.kdeplot(ax=axs[2], x='x', y='y', data=dfm, hue='xn', legend=True)  # KDE plot of x vs y with x1, x2 decoupled
+	fig, axs = plt.subplots(1, 2)
+	sns.set_theme()
 
-	axs[0].legend()
-	plt.suptitle('Problem 1')
+	sns.kdeplot(ax=axs[0], x='x', y='y', data=dfm).set_title('x1, x2 Coupled')                              # KDE plot of x vs y with x1, x2 coupled
+	sns.kdeplot(ax=axs[1], x='x', y='y', data=dfm, hue='xn', legend=True).set_Title('x1, x2 Decoupled')     # KDE plot of x vs y with x1, x2 decoupled
+
+	plt.suptitle('Problem 2 - KDE Plot')
 	plt.tight_layout()
 	plt.show()
 
