@@ -27,6 +27,7 @@ def problem2():
 
 	close_shift = df['Close'].shift()  # Create shifted version of Close column
 	df['Daily_Return'] = df['Close'] / close_shift  # Calculate Daily Return
+	df['Year'] = df['Date'].dt.year
 	print(df.describe())  # Print descriptive information (including mean of Close and Daily Return
 
 	fig, axs = plt.subplots(1, 2)
@@ -34,6 +35,9 @@ def problem2():
 
 	sns.lineplot(ax=axs[0], x='Date', y='Close', data=df)  # Lineplot of Close values
 	sns.lineplot(ax=axs[1], x='Date', y='Daily_Return', data=df, hue=df['Date'].dt.year, legend=True)  # LinePlot of Daily Return, colored by year
+
+	# fg = sns.FacetGrid(data=df, col='Year')
+	# fg.map(sns.lineplot, 'Date', 'Daily_Return')
 
 	plt.show()
 
