@@ -18,12 +18,15 @@ def problem1():
 
 	fig, axs = plt.subplots(1, 2)
 	sns.set_theme()
-
 	sns.kdeplot(ax=axs[0], x='x', y='y', data=dfm).set_title('x1, x2 Coupled')                              # KDE plot of x vs y with x1, x2 coupled
-	sns.kdeplot(ax=axs[1], x='x', y='y', data=dfm, hue='xn', legend=True).set_Title('x1, x2 Decoupled')     # KDE plot of x vs y with x1, x2 decoupled
-
-	plt.suptitle('Problem 2 - KDE Plot')
+	sns.kdeplot(ax=axs[1], x='x', y='y', data=dfm, hue='xn', legend=True).set_title('x1, x2 Decoupled')     # KDE plot of x vs y with x1, x2 decoupled
+	plt.suptitle('Problem 1 - KDE Plot')
 	plt.tight_layout()
+	plt.show()
+
+	sns.set_theme()
+	df.hist(layout=(1, 3))
+	plt.suptitle('Problem 1 - Histogram')
 	plt.show()
 
 	print(df.describe())
