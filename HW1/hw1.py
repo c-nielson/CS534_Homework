@@ -2,9 +2,79 @@ import io
 import math
 
 import numpy as np
+import pandas
 import pandas as pd
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+
+np.seterr(all='raise')
+
+
+def custom_loss(x, y, coef, coef_prior, alpha=0):
+	"""
+	Custom loss function provided in the homework.
+	:param x: Given x values
+	:param y: True y values
+	:param coef: Calculated coefficients
+	:param coef_prior: Given prior coefficients
+	:param alpha: penalty weight for prior coefficients
+	:return: loss
+	"""
+	y_diff_2 = y - np.dot(x, coef)
+	y_diff_2 = np.dot(y_diff_2.T, y_diff_2)
+	coef_diff_2 = coef - coef_prior
+	coef_diff_2 = np.dot(coef_diff_2.T, coef_diff_2)
+	# return y_diff_2 + alpha * coef_diff_2	# True loss; leads to errors
+	return alpha * coef_diff_2	# Loss based solely on coefficient differences; lets SGD_Regressor find close matches
+
+
+def d_w(x, y, coef, coef_prior, alpha=0):
+	"""
+	Derivative of the given loss function above. Designed to work for SGD, i.e. only calculates gradient based on a single x and y value.
+	:param x: Given x value
+	:param y: Given y value
+	:param coef: Current coefficients
+	:param coef_prior: Given coefficients
+	:param alpha: Penalty for coefficients
+	:return: Derivative of loss function w.r.t. coefficients
+	"""
+	dw = np.zeros((x.size, 1))
+	for i in range(dw.size):
+		# dw[i] = (-2 * (y - np.dot(x, coef)) * x[i]) + alpha * (2 * (coef[i] - coef_prior[i]))	# True gradient; gives errors
+		dw[i] = alpha * (2 * (coef[i] - coef_prior[i]))	# Gradient only considering the coefficients term
+	return dw
+
+
+def SGD_Regressor(x: pandas.DataFrame, y: pandas.Series, tolerance: float = 1.0e-6, max_iters: int = 1000, l: float = 1, alpha: float = 0):
+	"""
+	SGD_Regressor for P3
+	:param x: Given x values
+	:param y: Given y values
+	:param tolerance: Tolerance for loss
+	:param max_iters: Maximum iterations for regressor
+	:param l: Learning rate
+	:param alpha: Penalty multiplier
+	:return: Learned coefficients, (randomly generated) prior coefficients, final loss, tolerance, final iteration number
+	"""
+	coef_prior = np.random.randint(-20, 20, size=(x.shape[1], 1))  # Coefficients due to prior knowledge
+
+	coef = np.random.randint(-100, 100, size=(x.shape[1], 1))  # Same number of variables as in x DataFrame, random numbers
+	x_copy = x.to_numpy()
+	y_copy = y.to_numpy().reshape((y.size, 1))
+
+	y_size = y.size
+	rand_ints = np.random.default_rng()
+
+	loss = custom_loss(x_copy, y_copy, coef, coef_prior, alpha=alpha)
+	iter = 0
+	while (loss > tolerance) and (iter <= max_iters):
+		iter += 1
+		rand_choice = rand_ints.integers(y_size)
+		coef_update = d_w(x_copy[rand_choice], y_copy[rand_choice], coef, coef_prior, alpha=alpha)
+		coef = coef - l * coef_update
+		loss = custom_loss(x_copy, y_copy, coef, coef_prior, alpha=alpha)
+
+	return coef, coef_prior, loss, tolerance, iter
 
 
 def load_data() -> dict[str: pd.DataFrame]:
@@ -36,7 +106,7 @@ def print_scores(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], columns_to_
 	f.write('\n')
 
 
-def LinearRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], columns_to_drop: list[str], target: str) -> None:
+def LinearRegression(f: io.TextIOWrapper, data: dict[str: pandas.DataFrame], columns_to_drop: list[str], target: str) -> None:
 	"""
 	Used for Problem 1 of HW1. Generates LinearRegression, Ridge, and Lasso models, comparing results and testing various parameters.
 	:param f: file object used for writing
@@ -61,6 +131,7 @@ def LinearRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], columns
 	lin_model = linear_model.LinearRegression()
 	lin_model.fit(data['train'].drop(columns_to_drop, axis=1), data['train'][target])  # Fit model to training data
 	print_scores(f, data, columns_to_drop, target, lin_model)
+	print(lin_model.coef_)
 
 	# P1.2, LinearRegression on training and validation data:
 	# 	Scores for train:
@@ -173,7 +244,7 @@ def LinearRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], columns
 #   -0.23510002   5.43466858  -0.06826712   0.98664691   0.4060793
 #    2.44227449  -4.42358159  -0.89960376  -5.40385213 -17.294413
 #    0.45279312  -2.2420457    0.14356628   0.23403793  16.16481133]
-def FakeRidgeRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], columns_to_drop: list[str], target: str) -> None:
+def FakeRidgeRegression(f: io.TextIOWrapper, data: dict[str: pandas.DataFrame], columns_to_drop: list[str], target: str) -> None:
 	"""
 	Method for Problem 2 of homework 1.
 	:param f: File object to write results to.
@@ -182,12 +253,12 @@ def FakeRidgeRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], colu
 	:param target: target to fit to
 	:return: None
 	"""
-	alpha = 10
+	alpha = 10  # Alpha to use for Ridge and faking
 	augmented_data = data['train'].copy()
-	for label, _ in augmented_data.items():
+	for label, _ in augmented_data.items():  # Center columns
 		if label != 'date':
 			augmented_data[label] = augmented_data[label] - augmented_data[label].mean()
-	augment = np.identity(augmented_data.shape[1] - len(columns_to_drop)) * math.sqrt(alpha)
+	augment = np.identity(augmented_data.shape[1] - len(columns_to_drop)) * math.sqrt(alpha)  # Augmentation matrix alpha*I
 	augment = np.concatenate((np.zeros((augment.shape[0], len(columns_to_drop))), augment), axis=1)
 	augment = pd.DataFrame(augment)
 	augment.columns = augmented_data.columns.values
@@ -202,8 +273,81 @@ def FakeRidgeRegression(f: io.TextIOWrapper, data: dict[str: pd.DataFrame], colu
 	f.write(f'\n\nRidge coefficients:\n{lin_model.coef_}')
 
 
-def LinearRegressionWithKnowledge():
-	...
+# The SGD_Regressor code above fails to find suitable coefficients for the provided loss function, however this is likely due to poor correlation
+# within the problem, as evidenced by poor R^2 values in previous problems.
+# If the loss and gradient functions are modified to only aim to match the prior coefficients, the SGD_Regressor achieves this and finds close
+# matches, given below.
+# Learned coefficients:
+# [[ 15.99976097]
+#  [  8.99983145]
+#  [-15.99991113]
+#  [ -7.99992952]
+#  [-13.99989274]
+#  [-17.9998192 ]
+#  [  2.00026354]
+#  [  6.99980387]
+#  [-11.00012871]
+#  [-17.9996813 ]
+#  [  2.99971194]
+#  [-16.99977936]
+#  [  4.99992952]
+#  [ -2.99989274]
+#  [ -4.99979162]
+#  [-10.00026967]
+#  [-19.00014403]
+#  [  1.99985291]
+#  [  3.99993565]
+#  [ 12.00025435]
+#  [ 12.99975791]
+#  [  7.99981613]
+#  [ -3.00001226]
+#  [ 18.99964146]
+#  [ 10.99992339]]
+#
+# Prior coefficients:
+# [[ 16]
+#  [  9]
+#  [-16]
+#  [ -8]
+#  [-14]
+#  [-18]
+#  [  2]
+#  [  7]
+#  [-11]
+#  [-18]
+#  [  3]
+#  [-17]
+#  [  5]
+#  [ -3]
+#  [ -5]
+#  [-10]
+#  [-19]
+#  [  2]
+#  [  4]
+#  [ 12]
+#  [ 13]
+#  [  8]
+#  [ -3]
+#  [ 19]
+#  [ 11]]
+def LinearRegressionWithKnowledge(f: io.TextIOWrapper, data: dict[str: pandas.DataFrame], columns_to_drop: list[str], target: str) -> None:
+	"""
+	Used for problem 3
+	:param f: File object to write results to.
+	:param data: dict of data splits
+	:param columns_to_drop: list of columns to drop for fitting
+	:param target: target to fit to
+	:return: None
+	"""
+	l = 0.02
+	alpha = 1
+	learned_coef, prior_coef, loss, tol, iter = SGD_Regressor(data['train'].drop(columns_to_drop, axis=1), data['train'][target], l=l, alpha=alpha)
+	f.write(f'\n\nP3, lambda={l}, alpha={alpha}:\n')
+	f.write(f'\nNumber of iterations: {iter}')
+	f.write(f'\nTolerance: {tol}')
+	f.write(f'\nLoss: {loss}')
+	f.write(f'\n\nLearned coefficients:\n{learned_coef}')
+	f.write(f'\n\nPrior coefficients:\n{prior_coef}')
 
 
 if __name__ == '__main__':
@@ -213,6 +357,6 @@ if __name__ == '__main__':
 	filename = 'hw1_Nielson.txt'
 	print(f'All calculated values will be written to {filename}')
 	with open(filename, 'w') as f:
-		# LinearRegression(f, data, columns_to_drop, target)
-		# FakeRidgeRegression(f, data, columns_to_drop, target)
-		LinearRegressionWithKnowledge()
+		LinearRegression(f, data, columns_to_drop, target)
+		FakeRidgeRegression(f, data, columns_to_drop, target)
+		LinearRegressionWithKnowledge(f, data, columns_to_drop, target)
