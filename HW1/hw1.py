@@ -273,6 +273,7 @@ def FakeRidgeRegression(f: io.TextIOWrapper, data: dict[str: pandas.DataFrame], 
 	f.write(f'\n\nRidge coefficients:\n{lin_model.coef_}')
 
 
+# P3
 # The SGD_Regressor code above fails to find suitable coefficients for the provided loss function, however this is likely due to poor correlation
 # within the problem, as evidenced by poor R^2 values in previous problems.
 # If the loss and gradient functions are modified to only aim to match the prior coefficients, the SGD_Regressor achieves this and finds close
