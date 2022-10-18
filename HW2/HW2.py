@@ -1,12 +1,19 @@
+import math
 import re
 from numpy import where
 from tkinter import filedialog as fd
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
+import multiprocessing
+
+
+n_jobs = math.floor(multiprocessing.cpu_count() * 0.25)
 
 
 def load_files():
@@ -22,19 +29,42 @@ def load_files():
 
 
 def NB(train, validation, test, vec):
+	params = {
+		'alpha': np.linspace(0, 1000, 100001)
+	}
+
 	nb = MultinomialNB()
+	gs = GridSearchCV(nb, params, n_jobs=n_jobs)
+	print('\nOptimizing Naive Bayes...')
+	gs.fit(vec.transform(train['tweet']), train['target'])
+	print(gs.best_params_)
+	print(gs.best_score_)
+
+	nb = gs.best_estimator_
 	nb.fit(vec.transform(train['tweet']), train['target'])
 	nb_y_pred = nb.predict(vec.transform(validation['tweet']))
+
 	print(
 		f'\nNaive Bayes Validation Scores:\n'
 		f'\tAccuracy: {accuracy_score(validation["target"], nb_y_pred)}\n'
 		f'\tF1: {f1_score(validation["target"], nb_y_pred)}\n'
 	)
-	# TODO optimization
 
 
 def RF(train, validation, test, vec):
-	rf = RandomForestClassifier()
+	params = {
+		'n_estimators': np.arange(0, 1001),
+		'min_samples_leaf': np.linspace(0, 20, 101)
+	}
+
+	rf = RandomForestClassifier(random_state=0)
+	gs = GridSearchCV(rf, params, n_jobs=n_jobs)
+	print('\nOptimizing Random Forest...')
+	gs.fit(vec.transform(train['tweet']), train['target'])
+	print(gs.best_params_)
+	print(gs.best_score_)
+
+	rf = gs.best_estimator_
 	rf.fit(vec.transform(train['tweet']), train['target'])
 	rf_y_pred = rf.predict(vec.transform(validation['tweet']))
 
@@ -43,11 +73,23 @@ def RF(train, validation, test, vec):
 		f'\tAccuracy: {accuracy_score(validation["target"], rf_y_pred)}\n'
 		f'\tF1: {f1_score(validation["target"], rf_y_pred)}\n'
 	)
-	# TODO optimize
 
 
 def GBDT(train, validation, test, vec):
-	gbdt = GradientBoostingClassifier()
+	params = {
+		'n_estimators': np.arange(0, 1001),
+		'min_samples_leaf': np.linspace(0, 20, 101),
+		'learning_rate': np.arange(0, 101, 0.1)
+	}
+
+	gbdt = GradientBoostingClassifier(random_state=0)
+	gs = GridSearchCV(gbdt, params, n_jobs=n_jobs)
+	print('\nOptimizing GBDT...')
+	gs.fit(vec.transform(train['tweet']), train['target'])
+	print(gs.best_params_)
+	print(gs.best_score_)
+
+	gbdt = gs.best_estimator_
 	gbdt.fit(vec.transform(train['tweet']), train['target'])
 	gbdt_y_pred = gbdt.predict(vec.transform(validation['tweet']))
 
@@ -56,11 +98,22 @@ def GBDT(train, validation, test, vec):
 		f'\tAccuracy: {accuracy_score(validation["target"], gbdt_y_pred)}\n'
 		f'\tF1: {f1_score(validation["target"], gbdt_y_pred)}\n'
 	)
-	# TODO optimize
 
 
 def SVM(train, validation, test, vec):
-	svm = SVC()
+	params = {
+		'kernel': ['linear', 'polynomial', 'sigmoid'],
+		'C': np.linspace(0, 100, 1001)
+	}
+
+	svm = SVC(random_state=0)
+	gs = GridSearchCV(svm, params, n_jobs=n_jobs)
+	print('\nOptimizing SVC...')
+	gs.fit(vec.transform(train['tweet']), train['target'])
+	print(gs.best_params_)
+	print(gs.best_score_)
+
+	svm = gs.best_estimator_
 	svm.fit(vec.transform(train['tweet']), train['target'])
 	svm_y_pred = svm.predict(vec.transform(validation['tweet']))
 
@@ -69,7 +122,6 @@ def SVM(train, validation, test, vec):
 		f'\tAccuracy: {accuracy_score(validation["target"], svm_y_pred)}\n'
 		f'\tF1: {f1_score(validation["target"], svm_y_pred)}\n'
 	)
-	# TODO optimize
 
 
 if __name__ == "__main__":
